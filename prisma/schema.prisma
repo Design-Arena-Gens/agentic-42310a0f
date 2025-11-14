@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id               String           @id @default(cuid())
+  username         String           @unique
+  displayName      String
+  goldBalance      Int              @default(0)
+  usdBalance       Float            @default(0)
+  energy           Int              @default(100)
+  farmLastClaimedAt DateTime        @default(now())
+  nfts             NFTInstance[]
+  adViews          AdView[]
+  transactions     Transaction[]
+  boosts           BoostInstance[]
+  cosmetics        CosmeticInstance[]
+  battles          BattleParticipation[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model AdminSetting {
+  id                 Int      @id @default(1)
+  goldPurchaseRate   Float    @default(10) // GOLD per USD when buying
+  goldWithdrawRate   Float    @default(20) // GOLD per USD when withdrawing
+  adDailyLimit       Int      @default(5)
+  adRewardGold       Int      @default(5)
+  farmBaseMultiplier Float    @default(1)
+  adVerificationSecret String @default("aurora-secret-token")
+  updatedAt          DateTime @updatedAt
+}
+
+model NFTTemplate {
+  id            Int           @id @default(autoincrement())
+  name          String         @unique
+  rarity        String
+  goldPerHour   Float
+  basePriceGold Int
+  description   String
+  imageUrl      String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  instances     NFTInstance[]
+}
+
+model NFTInstance {
+  id         String   @id @default(cuid())
+  templateId Int
+  ownerId    String
+  acquiredAt DateTime @default(now())
+  template   NFTTemplate @relation(fields: [templateId], references: [id])
+  owner      User        @relation(fields: [ownerId], references: [id])
+}
+
+model AdView {
+  id         String   @id @default(cuid())
+  userId     String
+  rewardGold Int
+  token      String   @unique
+  consumed   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String?
+  type       String
+  goldAmount Int
+  usdAmount  Float
+  note       String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model BoostTemplate {
+  id          Int           @id @default(autoincrement())
+  name        String @unique
+  description String
+  goldCost    Int
+  multiplier  Float
+  durationHours Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  instances   BoostInstance[]
+}
+
+model BoostInstance {
+  id            String   @id @default(cuid())
+  templateId    Int
+  ownerId       String
+  activatedAt   DateTime @default(now())
+  expiresAt     DateTime
+  template      BoostTemplate @relation(fields: [templateId], references: [id])
+  owner         User          @relation(fields: [ownerId], references: [id])
+}
+
+model CosmeticItem {
+  id          Int           @id @default(autoincrement())
+  name        String @unique
+  description String
+  goldCost    Int
+  imageUrl    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  instances   CosmeticInstance[]
+}
+
+model CosmeticInstance {
+  id         String   @id @default(cuid())
+  itemId     Int
+  ownerId    String
+  acquiredAt DateTime @default(now())
+  item       CosmeticItem @relation(fields: [itemId], references: [id])
+  owner      User         @relation(fields: [ownerId], references: [id])
+}
+
+model Battle {
+  id            String   @id @default(cuid())
+  entryGold     Int
+  rewardGold    Int
+  rewardUsd     Float
+  startedAt     DateTime @default(now())
+  resolvedAt    DateTime?
+  participants  BattleParticipation[]
+}
+
+model BattleParticipation {
+  id        String   @id @default(cuid())
+  battleId  String
+  userId    String
+  result    String
+  createdAt DateTime @default(now())
+  battle    Battle   @relation(fields: [battleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
